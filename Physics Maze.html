@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>迷宫游戏</title>
+    <style>
+        /* 基础样式 */
+        canvas {
+            border: 2px solid black;
+        }
+    
+        .game-container {
+            position: relative;
+            margin: 20px;
+        }
+    
+        /* 开始菜单样式 */
+        #startMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            background: linear-gradient(125deg, #2c3e50, #3498db, #2980b9);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+    
+        /* 菜单容器样式 */
+        .menu-container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+        }
+    
+        /* 游戏标题样式 */
+        .game-title {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+    
+        /* 游戏说明样式 */
+        .game-instructions {
+            margin-bottom: 30px;
+            color: #34495e;
+            line-height: 1.6;
+        }
+    
+        /* 按钮容器样式 */
+        .button-container {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+    
+        /* 按钮基础样式 */
+        button {
+            padding: 12px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+    
+        /* 开始按钮样式 */
+        #startButton {
+            background: linear-gradient(145deg, #4CAF50, #45a049);
+            color: white;
+        }
+    
+        /* 选关按钮样式 */
+        #levelButton {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+        }
+    
+        /* 按钮悬停效果 */
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+    
+        /* 选关菜单样式 */
+        #levelMenu {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 2000;
+        }
+    
+        /* 关卡网格样式 */
+        .level-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+    
+        /* 关卡按钮样式 */
+        .level-button {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+        }
+    
+        /* 返回按钮样式 */
+        #backButton {
+            background: linear-gradient(145deg, #e74c3c, #c0392b);
+            color: white;
+        }
+    
+        /* 背景动画 */
+        @keyframes gradientBG {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        /* 在现有样式的最后添加 */
+.mobile-controls {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2000;
+}
+
+.d-pad {
+    position: relative;
+    width: 150px;
+    height: 150px;
+}
+
+.d-pad-btn {
+    position: absolute;
+    width: 50px;
+    height: 50px;
+    background: rgba(255, 255, 255, 0.8);
+    border: 2px solid #333;
+    border-radius: 10px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.d-pad-btn:active {
+    background: rgba(200, 200, 200, 0.8);
+    transform: scale(0.95);
+}
+
+.d-pad .up {
+    top: 0;
+    left: 50px;
+}
+
+.d-pad .left {
+    left: 0;
+    top: 50px;
+}
+
+.d-pad .right {
+    right: 0;
+    top: 50px;
+}
+
+.d-pad .down {
+    bottom: 0;
+    left: 50px;
+}
+
+/* 移动设备适配 */
+@media (max-width: 768px) {
+    .mobile-controls {
+        display: block;
+    }
+
+    .game-container {
+        margin-bottom: 180px;
+    }
+
+    canvas {
+        max-width: 100%;
+        height: auto;
+    }
+
+    .menu-container {
+        width: 90%;
+        max-width: 400px;
+        padding: 20px;
+    }
+
+    .button-container {
+        flex-direction: column;
+        gap: 10px;
+    }
+
+    button {
+        width: 100%;
+        padding: 15px;
+        font-size: 16px;
+    }
+}
+    </style>
+</head>
+<body>
+    
+    <div class="game-container">
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <canvas id="fogCanvas" width="400" height="400" style="position: absolute; top: 0; left: 0;"></canvas>
+    </div>
+<!-- 在game-container后面添加，在startMenu之前 -->
+<div class="mobile-controls">
+    <div class="d-pad">
+        <button class="d-pad-btn up">↑</button>
+        <button class="d-pad-btn left">←</button>
+        <button class="d-pad-btn right">→</button>
+        <button class="d-pad-btn down">↓</button>
+    </div>
+</div>
+    <!-- 选关菜单 -->
+    <div id="levelMenu">
+        <div class="menu-container">
+            <div class="game-title">选择关卡</div>
+            <div class="level-grid">
+                <button class="level-button">第 1 关</button>
+                <button class="level-button">第 2 关</button>
+                <button class="level-button">第 3 关</button>
+                <button class="level-button">第 4 关</button>
+                <button class="level-button">第 5 关</button>
+                <button class="level-button">第 6 关</button>
+            </div>
+            <button id="backButton">返回</button>
+        </div>
+    </div>
+
+    <!-- 在开始菜单中添加测试版标记 -->
+<div id="startMenu">
+    <div class="menu-container">
+        <!-- 添加测试版标记 -->
+        <div class="beta-tag">测试版不代表最终品质</div>
+        
+        <div class="game-title">迷宫游戏</div>
+        <div class="game-instructions">
+            使用方向键移动红色方块<br>
+            到达绿色终点获得胜利<br>
+            注意避开黑色墙壁
+        </div>
+        <div class="button-container">
+            <button id="startButton">开始游戏</button>
+            <button id="levelButton">选择关卡</button>
+        </div>
+        <!-- 修改版权信息，添加QQ频道提示 -->
+<div class="copyright-info" id="copyrightInfo">
+    Physics Maze版权为OG工作室所有
+    <span class="tooltip">点击复制QQ频道号</span>
+</div>
+
+    </div>
+</div>
+<style>
+    .copyright-info {
+        position: absolute;
+        bottom: -30px;
+        right: 0;
+        font-size: 12px;
+        color: #666;
+        text-align: right;
+        padding: 5px;
+        font-family: Arial, sans-serif;
+        text-shadow: 0 1px 1px rgba(255,255,255,0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .copyright-info:hover {
+        color: #333;
+        transform: scale(1.02);
+    }
+
+    .tooltip {
+        position: absolute;
+        bottom: 100%;
+        right: 0;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 4px;
+        font-size: 10px;
+        opacity: 0;
+        visibility: hidden;
+        transition: all 0.3s ease;
+        white-space: nowrap;
+        margin-bottom: 5px;
+    }
+
+    .copyright-info:hover .tooltip {
+        opacity: 1;
+        visibility: visible;
+    }
+
+    /* 添加复制成功的动画效果 */
+    @keyframes copySuccess {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+        100% { transform: scale(1); }
+    }
+
+    .copy-success {
+        animation: copySuccess 0.3s ease;
+    }
+
+    /* 移动设备适配 */
+    @media (max-width: 768px) {
+        .copyright-info {
+            font-size: 10px;
+            bottom: -25px;
+        }
+        
+        .tooltip {
+            font-size: 9px;
+            padding: 3px 8px;
+        }
+    }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const copyrightInfo = document.getElementById('copyrightInfo');
+        const qqChannelId = '506552307@qq.com'; // 替换为实际的QQ频道号
+    
+        copyrightInfo.addEventListener('click', async function() {
+            try {
+                await navigator.clipboard.writeText(qqChannelId);
+                
+                // 显示复制成功提示
+                const tooltip = this.querySelector('.tooltip');
+                tooltip.textContent = '复制成功！';
+                this.classList.add('copy-success');
+                
+                // 恢复原始提示文本
+                setTimeout(() => {
+                    tooltip.textContent = '点击复制QQ频道号';
+                    this.classList.remove('copy-success');
+                }, 2000);
+                
+            } catch (err) {
+                // 如果复制失败，显示QQ频道号
+                alert('QQ频道号：' + qqChannelId);
+            }
+        });
+    });
+    </script>
+<style>
+    .beta-tag {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #ff6b6b;
+        color: white;
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 4px;
+        transform: rotate(5deg);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        animation: float 2s ease-in-out infinite;
+        z-index: 1000;
+    }
+
+    /* 添加浮动动画 */
+    @keyframes float {
+        0%, 100% {
+            transform: rotate(5deg) translateY(0);
+        }
+        50% {
+            transform: rotate(5deg) translateY(-5px);
+        }
+    }
+
+    /* 确保menu-container有相对定位 */
+    .menu-container {
+        position: relative;
+        /* ... 其他现有样式 ... */
+    }
+
+    /* 移动设备适配 */
+    @media (max-width: 768px) {
+        .beta-tag {
+            font-size: 10px;
+            padding: 3px 8px;
+            top: -5px;
+            right: -5px;
+        }
+    }
+</style>
+    <script>
+        // 定义所有关卡的配置
+        const levels = {
+            1: {
+                walls: [
+                    // 第一关 - 基础迷宫
+                    // 主要竖直墙壁
+                    {x: 100, y: 0, width: 10, height: 120},
+                    {x: 100, y: 180, width: 10, height: 150},
+                    {x: 200, y: 70, width: 10, height: 130},
+                    {x: 200, y: 260, width: 10, height: 140},
+                    {x: 300, y: 0, width: 10, height: 100},
+                    {x: 300, y: 160, width: 10, height: 130},
+                    {x: 150, y: 150, width: 10, height: 100},
+                    {x: 250, y: 200, width: 10, height: 100},
+                    {x: 350, y: 100, width: 10, height: 120},
+                    
+                    // 水平墙壁
+                    {x: 0, y: 150, width: 60, height: 10},
+                    {x: 140, y: 100, width: 40, height: 10},
+                    {x: 220, y: 200, width: 40, height: 10},
+                    {x: 0, y: 300, width: 100, height: 10},
+                    {x: 270, y: 300, width: 90, height: 10},
+                    {x: 160, y: 50, width: 80, height: 10},
+                    {x: 50, y: 200, width: 60, height: 10},
+                    {x: 280, y: 150, width: 50, height: 10},
+                    {x: 180, y: 350, width: 80, height: 10},
+                    
+                    // 额外的小墙壁
+                    {x: 150, y: 150, width: 20, height: 10},
+                    {x: 250, y: 50, width: 20, height: 10},
+                    {x: 50, y: 250, width: 20, height: 10},
+                    {x: 350, y: 250, width: 30, height: 10},
+                    {x: 30, y: 100, width: 30, height: 10},
+                    {x: 180, y: 280, width: 30, height: 10}
+                ],
+                goals: [
+                    {
+                        x: 350,
+                        y: 350,
+                        size: 20
+                    }
+                ],
+                playerStart: {
+                    x: 20,
+                    y: 20
+                }
+            },
+            2: {
+                walls: [
+                    // 第二关 - 增加难度
+                    // 主要竖直墙壁
+                    {x: 100, y: 0, width: 10, height: 120},
+                    {x: 100, y: 180, width: 10, height: 220},
+                    {x: 200, y: 50, width: 10, height: 150},
+                    {x: 200, y: 260, width: 10, height: 140},
+                    {x: 300, y: 0, width: 10, height: 120},
+                    {x: 300, y: 180, width: 10, height: 220},
+                    {x: 150, y: 100, width: 10, height: 150},
+                    {x: 250, y: 150, width: 10, height: 150},
+                    {x: 350, y: 80, width: 10, height: 150},
+                    {x: 50, y: 50, width: 10, height: 150},
+                    
+                    // 水平墙壁
+                    {x: 0, y: 150, width: 80, height: 10},
+                    {x: 120, y: 100, width: 60, height: 10},
+                    {x: 220, y: 200, width: 60, height: 10},
+                    {x: 0, y: 300, width: 120, height: 10},
+                    {x: 250, y: 300, width: 110, height: 10},
+                    {x: 160, y: 50, width: 100, height: 10},
+                    {x: 30, y: 200, width: 80, height: 10},
+                    {x: 260, y: 150, width: 70, height: 10},
+                    {x: 160, y: 350, width: 100, height: 10},
+                    {x: 0, y: 250, width: 60, height: 10},
+                    
+                    // 额外的小墙壁和障碍物
+                    {x: 150, y: 150, width: 30, height: 10},
+                    {x: 250, y: 50, width: 30, height: 10},
+                    {x: 50, y: 250, width: 30, height: 10},
+                    {x: 350, y: 250, width: 50, height: 10},
+                    {x: 30, y: 100, width: 40, height: 10},
+                    {x: 180, y: 280, width: 40, height: 10},
+                    {x: 120, y: 320, width: 40, height: 10},
+                    {x: 280, y: 220, width: 40, height: 10},
+                    
+                    // 对角线墙壁
+                    {x: 180, y: 180, width: 40, height: 10, transform: 'rotate(45deg)'},
+                    {x: 320, y: 140, width: 40, height: 10, transform: 'rotate(-45deg)'},
+                    
+                    // 十字形障碍物
+                    {x: 220, y: 120, width: 40, height: 10},
+                    {x: 235, y: 105, width: 10, height: 40}
+                ],
+                goals: [
+                    {
+                        x: 370,
+                        y: 370,
+                        size: 20
+                    }
+                ],
+                playerStart: {
+                    x: 20,
+                    y: 20
+                }
+            },
+            3: {
+        walls: [
+            // 第三关 - 蛇形路径
+            // 主要竖直墙壁
+            {x: 50, y: -50, width: 10, height: 80},     // 出生点右侧的通道
+            {x: 50, y: 140, width: 10, height: 260},
+            {x: 100, y: 150, width: 10, height: 200}, // 调整位置，让玩家能通过
+            {x: 150, y: 50, width: 10, height: 150},
+            {x: 200, y: 150, width: 10, height: 200},
+            {x: 250, y: 50, width: 10, height: 150},
+            {x: 300, y: 100, width: 10, height: 200}, // 调整长度
+            {x: 350, y: 0, width: 10, height: 100},   // 调整长度，打开终点通道
+            
+            // 水平墙壁
+            {x: 0, y: 50, width: 100, height: 10},
+            {x: 150, y: 100, width: 100, height: 10},
+            {x: 50, y: 150, width: 100, height: 10},
+            {x: 150, y: 200, width: 100, height: 10},
+            {x: 50, y: 250, width: 100, height: 10},
+            {x: 150, y: 300, width: 200, height: 10},
+            {x: 50, y: 350, width: 250, height: 10},  // 调整宽度
+            
+            // 对角线墙壁 - 调整位置，确保不阻挡主要路径
+            {x: 120, y: 120, width: 60, height: 10, transform: 'rotate(45deg)'},
+            {x: 280, y: 180, width: 60, height: 10, transform: 'rotate(-45deg)'},
+            {x: 180, y: 220, width: 60, height: 10, transform: 'rotate(45deg)'}
+        ],
+        goals: [
+            {
+                x: 380,
+                y: 380,
+                size: 20
+            }
+        ],
+        playerStart: {
+            x: 20,
+            y: 20
+        }
+    },
+    4: {
+        walls: [
+            // 第四关 - 放射状设计
+            // 中心放射状墙壁
+            {x: 200, y: 200, width: 150, height: 10, transform: 'rotate(0deg)'},
+            {x: 200, y: 200, width: 150, height: 10, transform: 'rotate(45deg)'},
+            {x: 200, y: 200, width: 150, height: 10, transform: 'rotate(90deg)'},
+            {x: 200, y: 200, width: 150, height: 10, transform: 'rotate(135deg)'},
+            
+            // 外围环形墙壁
+            {x: 50, y: 50, width: 300, height: 10},
+            {x: 50, y: 50, width: 10, height: 300},
+            {x: 350, y: 50, width: 10, height: 300},
+            {x: 50, y: 350, width: 310, height: 10},
+            
+            // 内部迷宫
+            {x: 100, y: 100, width: 50, height: 10},
+            {x: 250, y: 100, width: 50, height: 10},
+            {x: 100, y: 300, width: 50, height: 10},
+            {x: 250, y: 300, width: 50, height: 10},
+            {x: 100, y: 100, width: 10, height: 50},
+            {x: 100, y: 250, width: 10, height: 50},
+            {x: 300, y: 100, width: 10, height: 50},
+            {x: 300, y: 250, width: 10, height: 50}
+        ],
+        goals: [
+            {
+                x: 185,
+                y: 185,
+                size: 20
+            }
+        ],
+        playerStart: {
+            x: 60,
+            y: 60
+        }
+    },
+    5: {
+        walls: [
+            // 第五关 - 移动障碍
+            // 迷宫边界
+            {x: 0, y: 0, width: 10, height: 400},
+            {x: 0, y: 0, width: 400, height: 10},
+            {x: 390, y: 0, width: 10, height: 400},
+            {x: 0, y: 390, width: 400, height: 10},
+            
+            // 左区域
+            {x: 50, y: 50, width: 100, height: 10},
+            {x: 50, y: 50, width: 10, height: 100},
+            {x: 150, y: 50, width: 10, height: 300},
+            
+            // 中区域
+            {x: 200, y: 100, width: 10, height: 200},
+            {x: 200, y: 100, width: 100, height: 10},
+            {x: 200, y: 300, width: 100, height: 10},
+            
+            // 右区域
+            {x: 300, y: 50, width: 10, height: 300},
+            {x: 300, y: 50, width: 50, height: 10},
+            
+            // 移动障碍物
+            {x: 100, y: 200, width: 50, height: 10, moving: true, speed: 2},
+            {x: 250, y: 150, width: 10, height: 50, moving: true, speed: 3}
+        ],
+        goals: [
+            {
+                x: 350,
+                y: 350,
+                size: 20
+            }
+        ],
+        playerStart: {
+            x: 20,
+            y: 20
+        }
+    },
+    6: {
+        walls: [
+            // 第六关 - 终极挑战
+            // 外围墙壁
+            {x: 0, y: 0, width: 400, height: 10},
+            {x: 0, y: 0, width: 10, height: 400},
+            {x: 390, y: 0, width: 10, height: 400},
+            {x: 0, y: 390, width: 400, height: 10},
+            
+            // 区域1 - 起始区
+            {x: 50, y: 50, width: 100, height: 10},
+            {x: 50, y: 50, width: 10, height: 100},
+            
+            // 区域2 - 中心迷宫
+            {x: 150, y: 100, width: 100, height: 10},
+            {x: 150, y: 100, width: 10, height: 100},
+            {x: 250, y: 100, width: 10, height: 200},
+            {x: 150, y: 200, width: 100, height: 10},
+            
+            // 区域3 - 终点区域
+            {x: 300, y: 250, width: 50, height: 10},
+            {x: 300, y: 250, width: 10, height: 100},
+            
+            // 特殊障碍
+            {x: 100, y: 150, width: 40, height: 40, type: 'rotating'},
+            {x: 200, y: 250, width: 40, height: 40, type: 'rotating'},
+            {x: 150, y: 300, width: 100, height: 10, moving: true, speed: 4},
+            
+            // 额外的挑战路径
+            {x: 50, y: 300, width: 10, height: 50},
+            {x: 350, y: 50, width: 10, height: 100},
+            {x: 300, y: 150, width: 50, height: 10}
+        ],
+        goals: [
+            {
+                x: 360,
+                y: 360,
+                size: 20
+            },
+            // 假终点
+            {
+                x: 50,
+                y: 360,
+                size: 20,
+                fake: true
+            }
+        ],
+        playerStart: {
+            x: 20,
+            y: 20
+        }
+    }
+};
+// 在DOMContentLoaded事件监听器内添加
+// 移动设备控制
+const dPadButtons = document.querySelectorAll('.d-pad-btn');
+let touchInterval = null;
+const moveSpeed = 5;
+
+function handleMove(direction) {
+    if (!gameStarted) return;
+
+    let newX = playerX;
+    let newY = playerY;
+
+    switch(direction) {
+        case 'up':
+            newY -= moveSpeed;
+            break;
+        case 'down':
+            newY += moveSpeed;
+            break;
+        case 'left':
+            newX -= moveSpeed;
+            break;
+        case 'right':
+            newX += moveSpeed;
+            break;
+    }
+
+    if (!checkCollision(newX, newY) && 
+        newX >= 0 && newX <= canvas.width - playerSize &&
+        newY >= 0 && newY <= canvas.height - playerSize) {
+        playerX = newX;
+        playerY = newY;
+    }
+}
+
+// 触摸事件处理
+dPadButtons.forEach(btn => {
+    let direction = btn.className.split(' ')[1]; // 获取方向类名
+
+    // 触摸开始
+    btn.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (touchInterval) clearInterval(touchInterval);
+        touchInterval = setInterval(() => handleMove(direction), 50);
+    });
+
+    // 触摸结束
+    btn.addEventListener('touchend', () => {
+        if (touchInterval) {
+            clearInterval(touchInterval);
+            touchInterval = null;
+        }
+    });
+
+    // 触摸取消
+    btn.addEventListener('touchcancel', () => {
+        if (touchInterval) {
+            clearInterval(touchInterval);
+            touchInterval = null;
+        }
+    });
+});
+
+// 禁用页面缩放
+document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) {
+        e.preventDefault();
+    }
+}, { passive: false });
+
+// 阻止双击缩放
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = Date.now();
+    if (now - lastTouchEnd < 300) {
+        e.preventDefault();
+    }
+    lastTouchEnd = now;
+}, false);
+// 游戏变量初始化
+let currentLevel = 1;
+let gameStarted = false;
+let walls = levels[1].walls;
+let goals = levels[1].goals;
+let playerX = levels[1].playerStart.x;
+let playerY = levels[1].playerStart.y;
+const playerSize = 15;
+const playerSpeed = 5;
+
+// 获取画布和上下文
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const fogCanvas = document.getElementById('fogCanvas');
+const fogCtx = fogCanvas.getContext('2d');
+
+// 获取DOM元素
+const startMenu = document.getElementById('startMenu');
+const startButton = document.getElementById('startButton');
+const levelMenu = document.getElementById('levelMenu');
+const backButton = document.getElementById('backButton');
+const levelButtons = document.querySelectorAll('.level-button');
+const levelButton = document.getElementById('levelButton');
+
+// 碰撞检测函数
+function checkCollision(x, y) {
+    for (let wall of walls) {
+        if (wall.type === 'rotating') {
+            // 旋转障碍物的碰撞检测
+            const centerX = wall.x + wall.width/2;
+            const centerY = wall.y + wall.height/2;
+            const angle = (wall.angle || 0) * Math.PI / 180;
+            
+            // 将玩家坐标转换到旋转坐标系
+            const relativeX = x - centerX;
+            const relativeY = y - centerY;
+            const rotatedX = relativeX * Math.cos(-angle) - relativeY * Math.sin(-angle);
+            const rotatedY = relativeX * Math.sin(-angle) + relativeY * Math.cos(-angle);
+            
+            // 检查碰撞
+            if (rotatedX > -wall.width/2 && rotatedX < wall.width/2 &&
+                rotatedY > -wall.height/2 && rotatedY < wall.height/2) {
+                return true;
+            }
+        } else if (wall.transform) {
+            // 对角线墙壁的碰撞检测
+            const angle = parseInt(wall.transform.match(/rotate\(([-\d]+)deg\)/)[1]);
+            const centerX = wall.x + wall.width/2;
+            const centerY = wall.y + wall.height/2;
+            
+            const relativeX = x - centerX;
+            const relativeY = y - centerY;
+            const rotatedX = relativeX * Math.cos(-angle * Math.PI / 180) - 
+                           relativeY * Math.sin(-angle * Math.PI / 180);
+            const rotatedY = relativeX * Math.sin(-angle * Math.PI / 180) + 
+                           relativeY * Math.cos(-angle * Math.PI / 180);
+            
+            if (rotatedX > -wall.width/2 && rotatedX < wall.width/2 &&
+                rotatedY > -wall.height/2 && rotatedY < wall.height/2) {
+                return true;
+            }
+        } else {
+            // 普通墙壁的碰撞检测
+            if (x + playerSize > wall.x && x < wall.x + wall.width &&
+                y + playerSize > wall.y && y < wall.y + wall.height) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+// 胜利检测函数
+function checkWin() {
+    for (let goal of goals) {
+        if (playerX + playerSize > goal.x && 
+            playerX < goal.x + goal.size && 
+            playerY + playerSize > goal.y && 
+            playerY < goal.y + goal.size) {
+            
+            // 如果是假终点
+            if (goal.fake) {
+                alert('这是假终点，继续寻找真正的终点！');
+                playerX = levels[currentLevel].playerStart.x;
+                playerY = levels[currentLevel].playerStart.y;
+                return false;
+            }
+            
+            // 如果是真终点
+            if (currentLevel < 6) {
+                if (confirm(`恭喜通过第 ${currentLevel} 关！是否进入下一关？`)) {
+                    currentLevel++;
+                    walls = levels[currentLevel].walls;
+                    goals = levels[currentLevel].goals;
+                    playerX = levels[currentLevel].playerStart.x;
+                    playerY = levels[currentLevel].playerStart.y;
+                } else {
+                    playerX = levels[currentLevel].playerStart.x;
+                    playerY = levels[currentLevel].playerStart.y;
+                }
+            } else {
+                alert('恭喜你通关了！');
+                gameStarted = false;
+                startMenu.style.display = 'flex';
+                currentLevel = 1;
+                walls = levels[1].walls;
+                goals = levels[1].goals;
+                playerX = levels[1].playerStart.x;
+                playerY = levels[1].playerStart.y;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+// 更新移动障碍物
+function updateMovingWalls() {
+    walls.forEach(wall => {
+        if (wall.moving) {
+            if (wall.width > wall.height) {
+                // 水平移动
+                wall.x += wall.speed;
+                if (wall.x > 350 || wall.x < 0) wall.speed *= -1;
+            } else {
+                // 垂直移动
+                wall.y += wall.speed;
+                if (wall.y > 350 || wall.y < 0) wall.speed *= -1;
+            }
+        }
+        if (wall.type === 'rotating') {
+            wall.angle = (wall.angle || 0) + 2;
+            if (wall.angle >= 360) wall.angle = 0;
+        }
+    });
+}
+
+// 迷雾效果
+const fogImage = new Image();
+fogImage.src = 'OIP-C.png';  // 确保图片路径正确
+
+// 修改updateFog函数
+function updateFog() {
+    fogCtx.clearRect(0, 0, fogCanvas.width, fogCanvas.height);
+    
+    // 将整个画布填充为几乎完全不透明的黑色
+    fogCtx.fillStyle = 'rgba(0, 0, 0, 0.95)'; // 增加不透明度到0.95
+    fogCtx.fillRect(0, 0, fogCanvas.width, fogCanvas.height);
+    
+    // 创建可见区域
+    fogCtx.save();
+    fogCtx.globalCompositeOperation = 'destination-out';
+    
+    // 创建更强烈的渐变效果
+    const gradient = fogCtx.createRadialGradient(
+        playerX + playerSize/2, 
+        playerY + playerSize/2, 
+        0,
+        playerX + playerSize/2, 
+        playerY + playerSize/2, 
+        80  // 减小可见范围半径
+    );
+    
+    // 调整渐变的透明度
+    gradient.addColorStop(0, 'rgba(0, 0, 0, 1)');     // 中心完全可见
+    gradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.9)'); // 内圈高可见度
+    gradient.addColorStop(0.7, 'rgba(0, 0, 0, 0.3)'); // 外圈低可见度
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');     // 边缘完全不可见
+    
+    fogCtx.fillStyle = gradient;
+    fogCtx.fillRect(0, 0, fogCanvas.width, fogCanvas.height);
+    fogCtx.restore();
+}
+
+// 主绘制函数
+function draw() {
+    if (!gameStarted) return;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // 更新移动障碍物
+    updateMovingWalls();
+
+    // 绘制墙壁
+    ctx.fillStyle = 'black';
+    for (let wall of walls) {
+        ctx.save();
+        if (wall.type === 'rotating') {
+            ctx.translate(wall.x + wall.width/2, wall.y + wall.height/2);
+            ctx.rotate((wall.angle || 0) * Math.PI / 180);
+            ctx.fillRect(-wall.width/2, -wall.height/2, wall.width, wall.height);
+        } else if (wall.transform) {
+            ctx.translate(wall.x + wall.width/2, wall.y + wall.height/2);
+            const angle = parseInt(wall.transform.match(/rotate\(([-\d]+)deg\)/)[1]);
+            ctx.rotate(angle * Math.PI / 180);
+            ctx.fillRect(-wall.width/2, -wall.height/2, wall.width, wall.height);
+        } else {
+            ctx.fillRect(wall.x, wall.y, wall.width, wall.height);
+        }
+        ctx.restore();
+    }
+
+    // 绘制终点
+    for (let goal of goals) {
+        ctx.fillStyle = goal.fake ? '#ff9999' : 'green';
+        ctx.fillRect(goal.x, goal.y, goal.size, goal.size);
+    }
+
+    // 绘制玩家
+    ctx.fillStyle = 'red';
+    ctx.fillRect(playerX, playerY, playerSize, playerSize);
+
+    // 绘制关卡指示器
+    ctx.fillStyle = 'black';
+    ctx.font = '20px Arial';
+    ctx.fillText(`第 ${currentLevel} 关`, 10, 30);
+
+    // 更新迷雾效果
+    updateFog();
+
+    // 检查胜利条件
+    checkWin();
+
+    // 继续动画
+    if (gameStarted) {
+        requestAnimationFrame(draw);
+    }
+}
+
+
+// 键盘控制
+document.addEventListener('keydown', (e) => {
+    if (!gameStarted) return;
+
+    let newX = playerX;
+    let newY = playerY;
+
+    switch(e.key) {
+        case 'ArrowUp':
+            newY -= playerSpeed;
+            break;
+        case 'ArrowDown':
+            newY += playerSpeed;
+            break;
+        case 'ArrowLeft':
+            newX -= playerSpeed;
+            break;
+        case 'ArrowRight':
+            newX += playerSpeed;
+            break;
+    }
+
+    // 检查新位置是否有效
+    if (!checkCollision(newX, newY) && 
+        newX >= 0 && newX <= canvas.width - playerSize &&
+        newY >= 0 && newY <= canvas.height - playerSize) {
+        playerX = newX;
+        playerY = newY;
+    }
+});
+
+// 开始按钮事件
+startButton.addEventListener('click', () => {
+    currentLevel = 1;
+    walls = levels[1].walls;
+    goals = levels[1].goals;
+    playerX = levels[1].playerStart.x;
+    playerY = levels[1].playerStart.y;
+    gameStarted = true;
+    startMenu.style.display = 'none';
+    draw();
+});
+
+// 选关按钮事件
+levelButton.addEventListener('click', () => {
+    levelMenu.style.display = 'flex';
+});
+
+// 返回按钮事件
+backButton.addEventListener('click', () => {
+    levelMenu.style.display = 'none';
+});
+
+// 关卡选择按钮事件
+levelButtons.forEach((button, index) => {
+    button.addEventListener('click', () => {
+        currentLevel = index + 1;
+        if (levels[currentLevel]) {
+            walls = levels[currentLevel].walls;
+            goals = levels[currentLevel].goals;
+            playerX = levels[currentLevel].playerStart.x;
+            playerY = levels[currentLevel].playerStart.y;
+            levelMenu.style.display = 'none';
+            startMenu.style.display = 'none';
+            gameStarted = true;
+            draw();
+        } else {
+            alert('该关卡正在开发中...');
+        }
+    });
+});
+
+// 确保图片加载完成
+fogImage.onload = () => {
+    if (gameStarted) {
+        draw();
+    }
+};
+</script>
+</body>
+</html>
